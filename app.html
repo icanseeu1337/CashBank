@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Quản lý Số dư - Money Manager</title>
+  <style>
+    :root {
+      --bg:#f3f4f6;--card:#ffffff;--muted:#6b7280;--accent:#2563eb;
+      --success:#16a34a;--danger:#dc2626;--info:#2563eb;
+      --shadow:0 4px 12px rgba(0,0,0,0.08);--radius:12px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:Inter,system-ui,sans-serif;
+      background:var(--bg);color:#111827;
+      display:flex;justify-content:center;align-items:flex-start;
+      padding:12px;
+    }
+    .app{width:100%;max-width:720px;position:relative;}
+    .card{
+      background:var(--card);border-radius:var(--radius);
+      padding:14px;box-shadow:var(--shadow);margin-bottom:12px;
+    }
+    header h1{text-align:center;font-size:20px;font-weight:700;margin-bottom:8px}
+    .form-grid{display:grid;grid-template-columns:1fr;gap:8px}
+    @media(min-width:768px){.form-grid{grid-template-columns:150px 1fr 80px 1fr}}
+    select,input,button{
+      font-size:15px;padding:10px;border:1px solid #e5e7eb;
+      border-radius:10px;background:white;
+    }
+    .btn{cursor:pointer;border:none}
+    .btn-primary{background:var(--success);color:white}
+    .btn-refund{background:var(--info);color:white}
+    .btn-danger{background:var(--danger);color:white}
+    .btn-ghost{background:#f3f4f6;color:#111}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    .controls .btn{flex:1;font-weight:600}
+    .balances table{width:100%;border-collapse:collapse}
+    .balances th,.balances td{padding:6px}
+    .balances td.right{text-align:right}
+    .money-words{font-size:14px;color:var(--muted);text-align:right;margin-top:4px}
+    .history-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px}
+    .history-table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:60%;
+      line-height:1.2;
+      white-space:nowrap;
+    }
+    .history-table th,.history-table td{
+      padding:5px 6px;border-bottom:1px solid #f3f4f6;vertical-align:middle;
+    }
+    .history-table td.right{text-align:right}
+    .badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;font-weight:700}
+    .badge.t{background:#ecfdf5;color:#166534}
+    .badge.c{background:#fff1f2;color:#7f1d1d}
+    .badge.h{background:#eff6ff;color:#1e3a8a}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .stat{padding:10px;border-radius:10px;text-align:center}
+    .stat .label{color:var(--muted);font-size:13px}
+    .stat .value{font-size:17px;font-weight:700;margin-top:4px}
+    @media(max-width:480px){
+      body{padding:0}
+      .card{border-radius:0}
+      .controls{flex-direction:column}
+      .history-head h2{font-size:15px}
+    }
+    .search-box {
+      display:flex;
+      align-items:center;
+      background:#f9fafb;
+      border:1px solid #e5e7eb;
+      border-radius:6px;
+      padding:4px 8px;
+      width:100%;
+      gap:4px;
+    }
+    .search-box svg {
+      width:14px;
+      height:14px;
+      flex-shrink:0;
+      color:#6b7280;
+    }
+    .search-box input {
+      border:none;
+      outline:none;
+      background:transparent;
+      font-size:13px;
+      width:100%;
+      padding:2px 0;
+    }
+    #historyWrapper {
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+    #historyWrapper::-webkit-scrollbar {height:6px;}
+    #historyWrapper::-webkit-scrollbar-thumb {background:#d1d5db;border-radius:3px;}
+    #historyWrapper::-webkit-scrollbar-track {background:#f3f4f6;}
+    .hidden{display:none}
+
+    .undo-floating {
+      position:fixed;
+      top:12px;
+      right:12px;
+      background:#9ca3af;
+      color:white;
+      width:42px;
+      height:42px;
+      border:none;
+      border-radius:50%;
+      font-size:20px;
+      font-weight:bold;
+      box-shadow:0 4px 10px rgba(0,0,0,0.15);
+      cursor:pointer;
+      transition:all 0.2s ease;
+      z-index:1000;
+    }
+    .undo-floating:hover {
+      background:#6b7280;
+      transform:scale(1.05);
+    }
+    .history-toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <button id="btnUndo" class="undo-floating" title="Hoàn tác">↩</button>
+
+    <div class="card">
+      <header><h1>Quản lý Số dư</h1></header>
+      <form id="mainForm" class="form-grid" autocomplete="off">
+        <select id="source"><option value="cash">Tiền mặt</option><option value="bank">Ngân hàng</option></select>
+        <input id="amount" placeholder="Nhập số tiền" inputmode="numeric" />
+        <button id="btn000" class="btn btn-ghost">000</button>
+        <div class="controls">
+          <button id="btnAdd" class="btn btn-primary" type="submit">Thu (+)</button>
+          <button id="btnRefund" class="btn btn-refund" type="button">Hoàn (↻)</button>
+          <button id="btnSubtract" class="btn btn-danger" type="button">Chi (-)</button>
+        </div>
+      </form>
+
+      <section class="card balances">
+        <table>
+          <tbody>
+            <tr><td>Ngân hàng</td><td id="bankBalance" class="right">0 đ</td></tr>
+            <tr><td>Tiền mặt</td><td id="cashBalance" class="right">0 đ</td></tr>
+            <tr><td><strong>Tổng</strong></td><td id="totalBalance" class="right" style="font-weight:700">0 đ</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <div class="history-head">
+          <h2>Lịch sử Thu/Chi</h2>
+          <button id="toggleHistory" class="btn btn-ghost" style="padding:6px 10px;font-size:13px">Hiện</button>
+        </div>
+        
+        <div id="historyWrapper" class="hidden">
+          <div class="history-toolbar">
+            <button id="btnClearHistory" class="btn btn-danger" style="padding:6px 10px; font-size:13px; white-space:nowrap; border-radius:6px;">🗑️ Xóa</button>
+            <div class="search-box">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 3a7.5 7.5 0 006.15 13.65z" />
+              </svg>
+              <input id="searchHistory" type="text" placeholder="Tìm kiếm..." />
+            </div>
+          </div>
+
+          <table class="history-table">
+            <thead>
+              <tr><th>Thời gian</th><th>Loại</th><th>Nguồn</th><th class="right">Số tiền</th></tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="history-head">
+          <h2>Thu/Chi trong tháng</h2>
+          <button id="toggleMonthly" class="btn btn-ghost" style="padding:6px 10px;font-size:13px">Hiện</button>
+        </div>
+        <div id="monthlyWrapper" class="hidden">
+          <input id="monthPicker" type="month" style="margin:8px 0;width:100%" />
+          <div class="grid-2">
+            <div class="stat" style="background:#fff5f5;border:1px solid #fee2e2">
+              <div class="label">Chi trong tháng</div>
+              <div id="totalChi" class="value" style="color:#991b1b">0 đ</div>
+            </div>
+            <div class="stat" style="background:#f0fdf4;border:1px solid #dcfce7">
+              <div class="label">Thu trong tháng</div>
+              <div id="totalThu" class="value" style="color:#0f766e">0 đ</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    const STORAGE_KEY="money-manager-v1";
+    // Thêm hiddenHistory để lưu các mục đã bị xóa khỏi view nhưng vẫn dùng để tính toán tháng
+    let state={balances:{bank:0,cash:0},history:[],hiddenHistory:[],showHistory:false,showMonthly:false,selectedMonth:(()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`})()};
+    
+    const sourceEl=document.getElementById("source"),amountEl=document.getElementById("amount");
+    const btn000=document.getElementById("btn000"),btnAdd=document.getElementById("btnAdd"),btnSubtract=document.getElementById("btnSubtract"),btnRefund=document.getElementById("btnRefund"),btnUndo=document.getElementById("btnUndo");
+    const bankBalanceEl=document.getElementById("bankBalance"),cashBalanceEl=document.getElementById("cashBalance"),totalBalanceEl=document.getElementById("totalBalance");
+    const toggleHistoryBtn=document.getElementById("toggleHistory"),historyWrapper=document.getElementById("historyWrapper"),historyBody=document.getElementById("historyBody");
+    const toggleMonthlyBtn=document.getElementById("toggleMonthly"),monthlyWrapper=document.getElementById("monthlyWrapper"),monthPicker=document.getElementById("monthPicker");
+    const totalChiEl=document.getElementById("totalChi"),totalThuEl=document.getElementById("totalThu"),searchHistoryEl=document.getElementById("searchHistory");
+    const btnClearHistory=document.getElementById("btnClearHistory");
+
+    function load(){const raw=localStorage.getItem(STORAGE_KEY);if(raw){try{const p=JSON.parse(raw);state.balances=p.balances||state.balances;state.history=p.history||[];state.hiddenHistory=p.hiddenHistory||[];}catch{}}}
+    function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify({balances:state.balances,history:state.history,hiddenHistory:state.hiddenHistory}))}
+    function fmt(num){return Number(num||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g," ")}
+
+    function addHistory(val,src,type){
+      const d=new Date(),days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      state.history.unshift({id:Date.now(),type,src,value:val,time:d.toLocaleTimeString("vi-VN",{hour12:false}),date:d.toLocaleDateString("vi-VN"),weekday:days[d.getDay()]});
+      save();render();
+    }
+    
+    function confirmAction(type,val,src){const srcText=src==="bank"?"Ngân hàng":"Tiền mặt";return confirm(`Xác nhận "${type}" ${fmt(val)} đ / ${srcText}?`);}
+    
+    function add(){const v=Number(amountEl.value.replace(/\s+/g,""));if(v>0&&confirmAction("Thu",v,sourceEl.value)){state.balances[sourceEl.value]+=v;addHistory(v,sourceEl.value,"Thu");amountEl.value="";}}
+    function sub(){const v=Number(amountEl.value.replace(/\s+/g,""));if(v>0&&confirmAction("Chi",v,sourceEl.value)){state.balances[sourceEl.value]-=v;addHistory(v,sourceEl.value,"Chi");amountEl.value="";}}
+    function ref(){const v=Number(amountEl.value.replace(/\s+/g,""));if(v>0&&confirmAction("Hoàn",v,sourceEl.value)){state.balances[sourceEl.value]+=v;addHistory(v,sourceEl.value,"Hoàn");amountEl.value="";}}
+    
+    function undo(){
+      if(state.history.length===0){alert("Không có giao dịch để hoàn tác.");return;}
+      const last=state.history.shift();
+      if(!confirm(`Hoàn tác giao dịch "${last.type}" ${fmt(last.value)} đ / ${last.src==="bank"?"Ngân hàng":"Tiền mặt"}?`)){
+          state.history.unshift(last);
+          return;
+      }
+      if(last.type==="Thu"){state.balances[last.src]-=last.value;}
+      else if(last.type==="Chi"){state.balances[last.src]+=last.value;}
+      else if(last.type==="Hoàn"){state.balances[last.src]-=last.value;}
+      save();render();
+    }
+
+    function add000(e){e.preventDefault();const cur=Number(amountEl.value.replace(/\s+/g,""))||0;amountEl.value=cur===0?"1000":String(cur*1000);}
+    
+    function renderHistory(){
+      const keyword=(searchHistoryEl?.value||"").trim().toLowerCase();historyBody.innerHTML="";
+      const filtered=state.history.filter(h=>{let srcLabel=h.src==="bank"?"ngân hàng":"tiền mặt";const text=`${h.time} ${h.date} ${h.weekday} ${h.type} ${srcLabel} ${h.value}`.toLowerCase();return text.includes(keyword);});
+      if(filtered.length===0){historyBody.innerHTML="<tr><td colspan='4' style='text-align:center;color:#888;padding:12px'>Không có dữ liệu</td></tr>";return;}
+      filtered.forEach(h=>{const tr=document.createElement("tr");tr.innerHTML=`<td>${h.time} ${h.weekday} (${h.date})</td><td><span class="badge ${h.type==="Thu"?"t":h.type==="Chi"?"c":"h"}">${h.type[0]}</span></td><td>${h.src==="bank"?"NH":"TM"}</td><td class="right">${fmt(h.value)} đ</td>`;historyBody.appendChild(tr);});
+    }
+
+    function renderBalances(){const b=state.balances.bank,c=state.balances.cash,t=b+c;bankBalanceEl.textContent=fmt(b)+" đ";cashBalanceEl.textContent=fmt(c)+" đ";totalBalanceEl.textContent=fmt(t)+" đ";}
+    
+    function renderMonthly(){
+        const [y,m]=state.selectedMonth.split("-").map(Number);
+        // Gộp cả lịch sử hiển thị và lịch sử đã ẩn để tính toán tháng
+        const allData = [...state.history, ...state.hiddenHistory];
+        const rec=allData.filter(h=>{const parts=h.date.split("/");const mo=Number(parts[1]),yr=Number(parts[2]);return yr===y&&mo===m;});
+        let chi=rec.filter(h=>h.type==="Chi").reduce((s,h)=>s+h.value,0);
+        const hoan=rec.filter(h=>h.type==="Hoàn").reduce((s,h)=>s+h.value,0);
+        const thu=rec.filter(h=>h.type==="Thu").reduce((s,h)=>s+h.value,0);
+        chi=Math.max(chi-hoan,0);
+        totalChiEl.textContent=fmt(chi)+" đ";totalThuEl.textContent=fmt(thu)+" đ";
+    }
+
+    function render(){
+        renderBalances();renderHistory();renderMonthly();
+        monthPicker.value=state.selectedMonth;
+        historyWrapper.classList.toggle("hidden",!state.showHistory);
+        toggleHistoryBtn.textContent=state.showHistory?"Ẩn":"Hiện";
+        monthlyWrapper.classList.toggle("hidden",!state.showMonthly);
+        toggleMonthlyBtn.textContent=state.showMonthly?"Ẩn":"Hiện";
+    }
+
+    load();
+    btn000.addEventListener("click",add000);
+    document.getElementById("mainForm").addEventListener("submit",e=>{e.preventDefault();add();});
+    btnAdd.addEventListener("click",e=>{e.preventDefault();add();});
+    btnSubtract.addEventListener("click",e=>{e.preventDefault();sub();});
+    btnRefund.addEventListener("click",e=>{e.preventDefault();ref();});
+    btnUndo.addEventListener("click",e=>{e.preventDefault();undo();});
+    
+    btnClearHistory.addEventListener("click", () => {
+        if(state.history.length === 0){
+            alert("Lịch sử đang trống!");
+            return;
+        }
+        if(confirm("⚠️ Lưu ý: Thao tác này sẽ dọn sạch danh sách hiển thị nhưng VẪN GIỮ lại dữ liệu để tính toán Thu/Chi trong tháng. Bạn có chắc chắn?")){
+            // Chuyển toàn bộ lịch sử hiện tại vào kho lưu trữ ngầm
+            state.hiddenHistory = [...state.hiddenHistory, ...state.history];
+            state.history = []; 
+            save();
+            render();
+        }
+    });
+
+    toggleHistoryBtn.addEventListener("click",()=>{state.showHistory=!state.showHistory;render();});
+    toggleMonthlyBtn.addEventListener("click",()=>{state.showMonthly=!state.showMonthly;render();});
+    monthPicker.addEventListener("change",e=>{state.selectedMonth=e.target.value;renderMonthly();});
+    searchHistoryEl.addEventListener("input",renderHistory);
+    
+    render();
+  })();
+  </script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+</body>
+</html>
