@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <link rel="manifest" href="manifest.json">
   <title>CASHBANK</title>
   <style>
@@ -31,13 +31,20 @@
 
     *{box-sizing:border-box;margin:0;padding:0; -webkit-tap-highlight-color: transparent;}
     
+    html {
+      height: 100%;
+      background: var(--bg);
+    }
+
     body{
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background:var(--bg); color:var(--text);
       display:flex; justify-content:center; align-items:flex-start;
       padding:12px;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
       transition: background 0.3s, color 0.3s;
+      min-height: 100%;
+      overflow-y: auto;
     }
     
     .app{width:100%; max-width:720px; position:relative;}
@@ -59,7 +66,6 @@
       min-height: 38px;
     }
 
-    /* Cards Số dư - Tránh tràn khung */
     .balance-grid {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;
     }
@@ -94,7 +100,6 @@
     .btn-danger{background:var(--danger); color:white}
     .btn-ghost{background:var(--bg); color:var(--text)}
     
-    /* Thanh phím nhanh cuộn ngang an toàn tuyệt đối trên Mobile */
     .quick-chips { 
       display: flex; 
       gap: 6px; 
@@ -103,9 +108,9 @@
       padding: 4px 0; 
       margin-top: 6px; 
       -webkit-overflow-scrolling: touch; 
-      scrollbar-width: none; /* Firefox */
+      scrollbar-width: none;
     }
-    .quick-chips::-webkit-scrollbar { display: none; /* Chrome, Safari, Opera */ }
+    .quick-chips::-webkit-scrollbar { display: none; }
     
     .quick-chips button { 
       padding: 6px 14px; 
@@ -120,28 +125,27 @@
     .controls .btn{flex:1; padding: 12px 0;}
 
     .history-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px}
-    .history-table{
-      width:100%; border-collapse:collapse; font-size:13px; line-height:1.4; white-space:nowrap;
-    }
-    .history-table th,.history-table td{
-      padding:8px 6px; border-bottom:1px solid var(--border); vertical-align:middle;
-    }
-    .history-table td.right{text-align:right}
     
-    .badge{display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:6px; font-weight:700; font-size: 12px;}
-    .badge.t{background:#dcfce7; color:#15803d}
-    .badge.c{background:#fee2e2; color:#b91c1c}
-    .badge.h{background:#e0f2fe; color:#0369a1}
+    .history-table{
+      width:100%; border-collapse:collapse; font-size:13px; line-height:1.4; table-layout: fixed;
+    }
+    .history-table th, .history-table td{
+      padding:10px 6px; border-bottom:1px solid var(--border); vertical-align:middle;
+    }
+    .history-table th:nth-child(1), .history-table td:nth-child(1) { width: 45%; text-align: left; }
+    .history-table th:nth-child(2), .history-table td:nth-child(2) { width: 25%; text-align: center; }
+    .history-table th:nth-child(3), .history-table td:nth-child(3) { width: 30%; text-align: right; }
 
     .val-plus { color: var(--success); font-weight: 600; }
     .val-minus { color: var(--danger); font-weight: 600; }
+    .val-info { color: var(--info); font-weight: 600; }
 
     .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
     .stat{padding:10px; border-radius:10px; text-align:center}
     .stat .label{color:var(--muted); font-size:13px}
     .stat .value{font-size:16px; font-weight:700; margin-top:4px}
     
-    #historyWrapper { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    #historyWrapper { width: 100%; }
     .hidden{display:none}
 
     .history-toolbar { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
@@ -157,33 +161,31 @@
     <div class="card">
       <div class="header-bar">
         <header><h1>CASHBANK</h1></header>
-        <button id="themeToggle" class="theme-toggle" type="button">🌙 Chế độ tối</button>
+        <button id="themeToggle" class="theme-toggle" type="button">🌙 Dark Mode</button>
       </div>
 
-      <!-- Thẻ Thống kê Số dư -->
       <div class="balance-grid">
         <div class="balance-card bank">
-          <div class="title">Ngân hàng</div>
-          <div id="bankBalance" class="val">0 đ</div>
+          <div class="title">Bank</div>
+          <div id="bankBalance" class="val">0 VND</div>
         </div>
         <div class="balance-card cash">
-          <div class="title">Tiền mặt</div>
-          <div id="cashBalance" class="val">0 đ</div>
+          <div class="title">Cash</div>
+          <div id="cashBalance" class="val">0 VND</div>
         </div>
         <div class="balance-card total">
-          <div class="title">Tổng cộng</div>
-          <div id="totalBalance" class="val">0 đ</div>
+          <div class="title">Total</div>
+          <div id="totalBalance" class="val">0 VND</div>
         </div>
       </div>
 
       <form id="mainForm" autocomplete="off">
         <div class="form-grid">
-          <select id="source"><option value="cash">Tiền mặt</option><option value="bank">Ngân hàng</option></select>
-          <input id="amount" placeholder="Nhập số tiền..." inputmode="numeric" />
+          <select id="source"><option value="cash">Cash</option><option value="bank">Bank</option></select>
+          <input id="amount" placeholder="Enter amount..." inputmode="numeric" />
           <button id="btn000" class="btn btn-ghost" type="button">000</button>
         </div>
 
-        <!-- Phím chọn nhanh mệnh giá từ 1k đến 500k (Đã thêm 20k) -->
         <div class="quick-chips">
           <button type="button" class="btn btn-ghost" onclick="addQuick(1000)">+1k</button>
           <button type="button" class="btn btn-ghost" onclick="addQuick(2000)">+2k</button>
@@ -196,52 +198,50 @@
         </div>
 
         <div class="controls">
-          <button id="btnAdd" class="btn btn-primary" type="button">Thu (+)</button>
-          <button id="btnRefund" class="btn btn-refund" type="button">Hoàn (↻)</button>
-          <button id="btnSubtract" class="btn btn-danger" type="button">Chi (-)</button>
+          <button id="btnAdd" class="btn btn-primary" type="button">Income (+)</button>
+          <button id="btnRefund" class="btn btn-refund" type="button">Refund (↻)</button>
+          <button id="btnSubtract" class="btn btn-danger" type="button">Expense (-)</button>
         </div>
       </form>
     </div>
 
-    <!-- Lịch sử -->
     <div class="card">
       <div class="history-head">
-        <h2>Lịch sử Thu/Chi</h2>
-        <button id="toggleHistory" class="btn btn-ghost" style="padding:6px 10px;font-size:13px" type="button">Hiện</button>
+        <h2>Transaction History</h2>
+        <button id="toggleHistory" class="btn btn-ghost" style="padding:6px 10px;font-size:13px" type="button">Show</button>
       </div>
       
       <div id="historyWrapper" class="hidden">
         <div class="history-toolbar">
-          <button id="btnClearHistory" class="btn btn-danger" style="padding:6px 10px; font-size:13px; white-space:nowrap; border-radius:6px;" type="button">🗑️ Xóa</button>
-          <button id="btnUndo" class="btn btn-ghost" style="padding:6px 10px; font-size:13px; white-space:nowrap; border-radius:6px; border:1px solid var(--border);" type="button" title="Hoàn tác">↩ Hoàn tác</button>
+          <button id="btnClearHistory" class="btn btn-danger" style="padding:6px 10px; font-size:13px; white-space:nowrap; border-radius:6px;" type="button">Clear</button>
+          <button id="btnUndo" class="btn btn-ghost" style="padding:6px 10px; font-size:13px; white-space:nowrap; border-radius:6px; border:1px solid var(--border);" type="button" title="Undo">↩ Undo</button>
         </div>
 
         <table class="history-table">
           <thead>
-            <tr><th>Thời gian</th><th>Loại</th><th>Nguồn</th><th class="right">Số tiền</th></tr>
+            <tr><th>Time</th><th style="text-align:center;">Source</th><th style="text-align:right;">Amount</th></tr>
           </thead>
           <tbody id="historyBody"></tbody>
         </table>
-        <button id="btnLoadMore" class="load-more-btn hidden" type="button">Xem thêm giao dịch cũ</button>
+        <button id="btnLoadMore" class="load-more-btn hidden" type="button">Load older transactions</button>
       </div>
     </div>
 
-    <!-- Thống kê Tháng -->
     <div class="card">
       <div class="history-head">
-        <h2>Thu/Chi trong tháng</h2>
-        <button id="toggleMonthly" class="btn btn-ghost" style="padding:6px 10px;font-size:13px" type="button">Hiện</button>
+        <h2>Monthly Summary</h2>
+        <button id="toggleMonthly" class="btn btn-ghost" style="padding:6px 10px;font-size:13px" type="button">Show</button>
       </div>
       <div id="monthlyWrapper" class="hidden">
         <input id="monthPicker" type="month" style="margin:8px 0;width:100%" />
         <div class="grid-2">
           <div class="stat" style="background:rgba(220,38,38,0.1); border:1px solid rgba(220,38,38,0.2)">
-            <div class="label">Chi trong tháng</div>
-            <div id="totalChi" class="value" style="color:var(--danger)">0 đ</div>
+            <div class="label">Monthly Expenses</div>
+            <div id="totalExpense" class="value" style="color:var(--danger)">0 VND</div>
           </div>
           <div class="stat" style="background:rgba(22,163,74,0.1); border:1px solid rgba(22,163,74,0.2)">
-            <div class="label">Thu trong tháng</div>
-            <div id="totalThu" class="value" style="color:var(--success)">0 đ</div>
+            <div class="label">Monthly Income</div>
+            <div id="totalIncome" class="value" style="color:var(--success)">0 VND</div>
           </div>
         </div>
       </div>
@@ -267,12 +267,12 @@
     const bankBalanceEl=document.getElementById("bankBalance"), cashBalanceEl=document.getElementById("cashBalance"), totalBalanceEl=document.getElementById("totalBalance");
     const toggleHistoryBtn=document.getElementById("toggleHistory"), historyWrapper=document.getElementById("historyWrapper"), historyBody=document.getElementById("historyBody"), btnLoadMore=document.getElementById("btnLoadMore");
     const toggleMonthlyBtn=document.getElementById("toggleMonthly"), monthlyWrapper=document.getElementById("monthlyWrapper"), monthPicker=document.getElementById("monthPicker");
-    const totalChiEl=document.getElementById("totalChi"), totalThuEl=document.getElementById("totalThu");
+    const totalExpenseEl=document.getElementById("totalExpense"), totalIncomeEl=document.getElementById("totalIncome");
     const btnClearHistory=document.getElementById("btnClearHistory"), themeToggleBtn=document.getElementById("themeToggle");
 
     function applyTheme() {
       document.documentElement.setAttribute("data-theme", state.theme);
-      themeToggleBtn.textContent = state.theme === "dark" ? "☀️ Chế độ sáng" : "🌙 Chế độ tối";
+      themeToggleBtn.textContent = state.theme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode";
       localStorage.setItem("theme", state.theme);
     }
     themeToggleBtn.addEventListener("click", () => {
@@ -281,6 +281,18 @@
     });
 
     function fmt(num){ return Number(num||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g," "); }
+
+    function formatTimeDisplay(d) {
+      let hours = d.getHours();
+      let minutes = String(d.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${hours}:${minutes}${ampm} ${day}/${month}/${year}`;
+    }
 
     amountEl.addEventListener("input", (e) => {
       let raw = e.target.value.replace(/\D/g, "");
@@ -310,35 +322,33 @@
     }
 
     function addHistory(val,src,type){
-      const d=new Date(),days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      const d=new Date();
       state.history.unshift({
         id:Date.now(), type, src, value:val,
-        time:d.toLocaleTimeString("vi-VN",{hour12:false}),
-        date:d.toLocaleDateString("vi-VN"),
-        weekday:days[d.getDay()],
+        formattedTime: formatTimeDisplay(d),
         yr: d.getFullYear(), mo: d.getMonth() + 1
       });
       save(); render();
     }
     
     function confirmAction(type,val,src){
-      const srcText=src==="bank"?"Ngân hàng":"Tiền mặt";
-      return confirm(`Xác nhận "${type}" ${fmt(val)} đ / ${srcText}?`);
+      const srcText=src==="bank"?"Bank":"Cash";
+      return confirm(`Confirm "${type}" ${fmt(val)} VND / ${srcText}?`);
     }
     
-    function add(){const v=Number(amountEl.value.replace(/\s+/g,""));if(v>0&&confirmAction("Thu",v,sourceEl.value)){state.balances[sourceEl.value]+=v;addHistory(v,sourceEl.value,"Thu");amountEl.value="";}}
-    function sub(){const v=Number(amountEl.value.replace(/\s+/g,""));if(v>0&&confirmAction("Chi",v,sourceEl.value)){state.balances[sourceEl.value]-=v;addHistory(v,sourceEl.value,"Chi");amountEl.value="";}}
-    function ref(){const v=Number(amountEl.value.replace(/\s+/g,""));if(v>0&&confirmAction("Hoàn",v,sourceEl.value)){state.balances[sourceEl.value]+=v;addHistory(v,sourceEl.value,"Hoàn");amountEl.value="";}}
+    function add(){const v=Number(amountEl.value.replace(/\s+/g,""));if(v>0&&confirmAction("Income",v,sourceEl.value)){state.balances[sourceEl.value]+=v;addHistory(v,sourceEl.value,"Income");amountEl.value="";}}
+    function sub(){const v=Number(amountEl.value.replace(/\s+/g,""));if(v>0&&confirmAction("Expense",v,sourceEl.value)){state.balances[sourceEl.value]-=v;addHistory(v,sourceEl.value,"Expense");amountEl.value="";}}
+    function ref(){const v=Number(amountEl.value.replace(/\s+/g,""));if(v>0&&confirmAction("Refund",v,sourceEl.value)){state.balances[sourceEl.value]+=v;addHistory(v,sourceEl.value,"Refund");amountEl.value="";}}
     
     function undo(){
-      if(state.history.length===0){alert("Không có giao dịch để hoàn tác.");return;}
+      if(state.history.length===0){alert("No transactions to undo.");return;}
       const last=state.history.shift();
-      if(!confirm(`Hoàn tác giao dịch "${last.type}" ${fmt(last.value)} đ / ${last.src==="bank"?"Ngân hàng":"Tiền mặt"}?`)){
+      if(!confirm(`Undo transaction "${last.type}" ${fmt(last.value)} VND / ${last.src==="bank"?"Bank":"Cash"}?`)){
           state.history.unshift(last); return;
       }
-      if(last.type==="Thu"){state.balances[last.src]-=last.value;}
-      else if(last.type==="Chi"){state.balances[last.src]+=last.value;}
-      else if(last.type==="Hoàn"){state.balances[last.src]-=last.value;}
+      if(last.type==="Income" || last.type==="Thu"){state.balances[last.src]-=last.value;}
+      else if(last.type==="Expense" || last.type==="Chi"){state.balances[last.src]+=last.value;}
+      else if(last.type==="Refund" || last.type==="Hoàn"){state.balances[last.src]-=last.value;}
       save(); render();
     }
 
@@ -351,7 +361,7 @@
     function renderHistory(){
       historyBody.innerHTML="";
       if(state.history.length===0){
-        historyBody.innerHTML="<tr><td colspan='4' style='text-align:center;color:var(--muted);padding:12px'>Không có dữ liệu</td></tr>";
+        historyBody.innerHTML="<tr><td colspan='3' style='text-align:center;color:var(--muted);padding:12px'>No data available</td></tr>";
         btnLoadMore.classList.add("hidden");
         return;
       }
@@ -359,14 +369,29 @@
       const visibleData = state.history.slice(0, state.displayLimit);
       visibleData.forEach(h=>{
         const tr=document.createElement("tr");
-        const valClass = h.type === "Thu" || h.type === "Hoàn" ? "val-plus" : "val-minus";
-        const sign = h.type === "Thu" || h.type === "Hoàn" ? "+" : "-";
+        const isPlus = h.type === "Income" || h.type === "Thu";
+        const isRefund = h.type === "Refund" || h.type === "Hoàn";
+        
+        let valClass = "val-minus";
+        let sourceClass = "val-minus";
+        let sign = "-";
+
+        if(isPlus) {
+          valClass = "val-plus";
+          sourceClass = "val-plus";
+          sign = "+";
+        } else if(isRefund) {
+          valClass = "val-info";
+          sourceClass = "val-info";
+          sign = "+";
+        }
+
+        const timeDisplay = h.formattedTime || (h.time + " (" + h.date + ")");
         
         tr.innerHTML=`
-          <td>${h.time} (${h.date})</td>
-          <td><span class="badge ${h.type==="Thu"?"t":h.type==="Chi"?"c":"h"}">${h.type[0]}</span></td>
-          <td>${h.src==="bank"?"NH":"TM"}</td>
-          <td class="right ${valClass}">${sign}${fmt(h.value)} đ</td>
+          <td>${timeDisplay}</td>
+          <td style="text-align:center;" class="${sourceClass}">${h.src==="bank"?"Bank":"Cash"}</td>
+          <td class="right ${valClass}">${sign}${fmt(h.value)} VND</td>
         `;
         historyBody.appendChild(tr);
       });
@@ -385,9 +410,9 @@
 
     function renderBalances(){
       const b=state.balances.bank, c=state.balances.cash, t=b+c;
-      bankBalanceEl.textContent=fmt(b)+" đ";
-      cashBalanceEl.textContent=fmt(c)+" đ";
-      totalBalanceEl.textContent=fmt(t)+" đ";
+      bankBalanceEl.textContent=fmt(b)+" VND";
+      cashBalanceEl.textContent=fmt(c)+" VND";
+      totalBalanceEl.textContent=fmt(t)+" VND";
     }
     
     function renderMonthly(){
@@ -403,20 +428,20 @@
           return false;
         });
         
-        let chi=rec.filter(h=>h.type==="Chi").reduce((s,h)=>s+h.value,0);
-        const hoan=rec.filter(h=>h.type==="Hoàn").reduce((s,h)=>s+h.value,0);
-        const thu=rec.filter(h=>h.type==="Thu").reduce((s,h)=>s+h.value,0);
-        chi=Math.max(chi-hoan,0);
-        totalChiEl.textContent=fmt(chi)+" đ"; totalThuEl.textContent=fmt(thu)+" đ";
+        let expense=rec.filter(h=>h.type==="Expense" || h.type==="Chi").reduce((s,h)=>s+h.value,0);
+        const refund=rec.filter(h=>h.type==="Refund" || h.type==="Hoàn").reduce((s,h)=>s+h.value,0);
+        const income=rec.filter(h=>h.type==="Income" || h.type==="Thu").reduce((s,h)=>s+h.value,0);
+        expense=Math.max(expense-refund,0);
+        totalExpenseEl.textContent=fmt(expense)+" VND"; totalIncomeEl.textContent=fmt(income)+" VND";
     }
 
     function render(){
         renderBalances(); renderHistory(); renderMonthly();
         monthPicker.value=state.selectedMonth;
         historyWrapper.classList.toggle("hidden",!state.showHistory);
-        toggleHistoryBtn.textContent=state.showHistory?"Ẩn":"Hiện";
+        toggleHistoryBtn.textContent=state.showHistory?"Hide":"Show";
         monthlyWrapper.classList.toggle("hidden",!state.showMonthly);
-        toggleMonthlyBtn.textContent=state.showMonthly?"Ẩn":"Hiện";
+        toggleMonthlyBtn.textContent=state.showMonthly?"Hide":"Show";
     }
 
     load();
@@ -428,8 +453,8 @@
     btnUndo.addEventListener("click",e=>{e.preventDefault();undo();});
     
     btnClearHistory.addEventListener("click", () => {
-        if(state.history.length === 0){ alert("Lịch sử đang trống!"); return; }
-        if(confirm("Sure?")){
+        if(state.history.length === 0){ alert("History is empty!"); return; }
+        if(confirm("Are you sure?")){
             state.hiddenHistory = [...state.hiddenHistory, ...state.history];
             state.history = []; 
             save(); render();
