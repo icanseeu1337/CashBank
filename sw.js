@@ -1,4 +1,4 @@
-const cacheName = 'cashbank-v1';
+const CACHE_NAME = 'cashbank-v1.2.3';
 const filesToCache = ['app.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
