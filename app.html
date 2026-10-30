@@ -28,7 +28,7 @@
       margin: 0;
       padding: 0;
       -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation; /* Loại bỏ trễ 300ms trên mobile */
+      touch-action: manipulation;
     }
     
     html, body {
@@ -61,7 +61,7 @@
       box-shadow: var(--shadow);
       margin-bottom: 12px;
       border: 1px solid var(--border);
-      transform: translateZ(0); /* Bật GPU Acceleration */
+      transform: translateZ(0);
       will-change: transform;
     }
     
@@ -207,6 +207,37 @@
       cursor: pointer;
       font-size: 13px;
     }
+
+    /* Khung chọn Tháng cuộn mượt chuẩn Tiếng Anh */
+    .month-picker-container {
+      position: relative;
+      margin: 8px 0;
+      width: 100%;
+      cursor: pointer;
+    }
+    .month-picker-display {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+    .month-picker-native {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      visibility: hidden;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -297,7 +328,12 @@
         <button id="toggleMonthly" class="btn btn-ghost" style="padding:6px 10px;font-size:13px" type="button">Show</button>
       </div>
       <div id="monthlyWrapper" class="hidden">
-        <input id="monthPicker" type="month" style="margin:8px 0;width:100%" />
+        
+        <div id="monthPickerContainer" class="month-picker-container">
+          <div id="monthDisplay" class="month-picker-display">OCTOBER 2026 ▾</div>
+          <input id="monthPicker" type="month" class="month-picker-native" />
+        </div>
+
         <div class="grid-2">
           <div class="stat" style="background:rgba(220,38,38,0.1); border:1px solid rgba(220,38,38,0.2)">
             <div class="label">Monthly Expenses</div>
@@ -331,7 +367,7 @@
     const btn000=document.getElementById("btn000"), btnAdd=document.getElementById("btnAdd"), btnSubtract=document.getElementById("btnSubtract"), btnRefund=document.getElementById("btnRefund"), btnUndo=document.getElementById("btnUndo");
     const bankBalanceEl=document.getElementById("bankBalance"), cashBalanceEl=document.getElementById("cashBalance"), totalBalanceEl=document.getElementById("totalBalance");
     const toggleHistoryBtn=document.getElementById("toggleHistory"), historyWrapper=document.getElementById("historyWrapper"), historyBody=document.getElementById("historyBody"), btnLoadMore=document.getElementById("btnLoadMore");
-    const toggleMonthlyBtn=document.getElementById("toggleMonthly"), monthlyWrapper=document.getElementById("monthlyWrapper"), monthPicker=document.getElementById("monthPicker");
+    const toggleMonthlyBtn=document.getElementById("toggleMonthly"), monthlyWrapper=document.getElementById("monthlyWrapper"), monthPickerContainer=document.getElementById("monthPickerContainer"), monthPicker=document.getElementById("monthPicker"), monthDisplay=document.getElementById("monthDisplay");
     const totalExpenseEl=document.getElementById("totalExpense"), totalIncomeEl=document.getElementById("totalIncome");
     const btnClearHistory=document.getElementById("btnClearHistory");
     
@@ -340,6 +376,26 @@
     const settingsPanel=document.getElementById("settingsPanel");
     const currencyInput=document.getElementById("currencyInput");
     const btnSaveCurrency=document.getElementById("btnSaveCurrency");
+
+    const monthNames = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+
+    function updateMonthDisplayLabel() {
+      if(!state.selectedMonth) return;
+      const [y, m] = state.selectedMonth.split("-").map(Number);
+      if(m >= 1 && m <= 12) {
+        monthDisplay.textContent = `${monthNames[m - 1]} ${y} ▾`;
+      }
+    }
+
+    // Sự kiện mở bộ chọn tháng khi chạm vào khung
+    monthPickerContainer.addEventListener("click", () => {
+      if (typeof monthPicker.showPicker === "function") {
+        monthPicker.showPicker();
+      } else {
+        monthPicker.focus();
+        monthPicker.click();
+      }
+    });
 
     function updateCurrencyDisplay() {
       currencyBadge.textContent = state.currency;
@@ -500,6 +556,7 @@
     
     function renderMonthly(){
         if(!state.selectedMonth) return;
+        updateMonthDisplayLabel();
         const [y,m]=state.selectedMonth.split("-").map(Number);
         const allData = [...state.history, ...state.hiddenHistory];
         
@@ -547,7 +604,10 @@
 
     toggleHistoryBtn.addEventListener("click",()=>{state.showHistory=!state.showHistory;render();});
     toggleMonthlyBtn.addEventListener("click",()=>{state.showMonthly=!state.showMonthly;render();});
-    monthPicker.addEventListener("change",e=>{state.selectedMonth=e.target.value;renderMonthly();});
+    monthPicker.addEventListener("change",e=>{
+      state.selectedMonth=e.target.value;
+      renderMonthly();
+    });
     
     render();
   })();
