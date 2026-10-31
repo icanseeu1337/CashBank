@@ -208,7 +208,6 @@
       font-size: 13px;
     }
 
-    /* Khung chọn Tháng cuộn mượt chuẩn Tiếng Anh */
     .month-picker-container {
       position: relative;
       margin: 8px 0;
@@ -387,7 +386,6 @@
       }
     }
 
-    // Sự kiện mở bộ chọn tháng khi chạm vào khung
     monthPickerContainer.addEventListener("click", () => {
       if (typeof monthPicker.showPicker === "function") {
         monthPicker.showPicker();
@@ -484,9 +482,9 @@
       if(!confirm(`Undo transaction "${last.type}" ${fmt(last.value)} ${state.currency} / ${last.src==="bank"?"Bank":"Cash"}?`)){
           state.history.unshift(last); return;
       }
-      if(last.type==="Income" || last.type==="Thu"){state.balances[last.src]-=last.value;}
-      else if(last.type==="Expense" || last.type==="Chi"){state.balances[last.src]+=last.value;}
-      else if(last.type==="Refund" || last.type==="Hoàn"){state.balances[last.src]-=last.value;}
+      if(last.type==="Income"){state.balances[last.src]-=last.value;}
+      else if(last.type==="Expense"){state.balances[last.src]+=last.value;}
+      else if(last.type==="Refund"){state.balances[last.src]-=last.value;}
       save(); render();
     }
 
@@ -507,8 +505,8 @@
       const visibleData = state.history.slice(0, state.displayLimit);
       visibleData.forEach(h=>{
         const tr=document.createElement("tr");
-        const isPlus = h.type === "Income" || h.type === "Thu";
-        const isRefund = h.type === "Refund" || h.type === "Hoàn";
+        const isPlus = h.type === "Income";
+        const isRefund = h.type === "Refund";
         
         let valClass = "val-minus";
         let sourceClass = "val-minus";
@@ -568,21 +566,26 @@
           return false;
         });
         
-        let expense=rec.filter(h=>h.type==="Expense" || h.type==="Chi").reduce((s,h)=>s+h.value,0);
-        const refund=rec.filter(h=>h.type==="Refund" || h.type==="Hoàn").reduce((s,h)=>s+h.value,0);
-        const income=rec.filter(h=>h.type==="Income" || h.type==="Thu").reduce((s,h)=>s+h.value,0);
+        let expense=rec.filter(h=>h.type==="Expense").reduce((s,h)=>s+h.value,0);
+        const refund=rec.filter(h=>h.type==="Refund").reduce((s,h)=>s+h.value,0);
+        const income=rec.filter(h=>h.type==="Income").reduce((s,h)=>s+h.value,0);
         expense=Math.max(expense-refund,0);
         totalExpenseEl.textContent=fmt(expense); totalIncomeEl.textContent=fmt(income);
     }
 
     function render(){
-        renderBalances(); renderHistory(); renderMonthly();
+        renderBalances();
         monthPicker.value=state.selectedMonth;
         historyWrapper.classList.toggle("hidden",!state.showHistory);
         toggleHistoryBtn.textContent=state.showHistory?"Hide":"Show";
         monthlyWrapper.classList.toggle("hidden",!state.showMonthly);
         toggleMonthlyBtn.textContent=state.showMonthly?"Hide":"Show";
         settingsPanel.classList.toggle("hidden", !state.showSettings);
+
+        requestAnimationFrame(() => {
+          renderHistory();
+          renderMonthly();
+        });
     }
 
     load();
@@ -609,7 +612,9 @@
       renderMonthly();
     });
     
-    render();
+    requestAnimationFrame(() => {
+      render();
+    });
   })();
   </script>
 <script>
