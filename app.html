@@ -127,6 +127,7 @@
     .btn-danger { background: var(--danger); color: white; }
     .btn-ghost { background: var(--bg); color: var(--text); }
     
+    /* Thanh cuộn ngang mượt mà cho các nút nhanh */
     .quick-chips { 
       display: flex; 
       gap: 6px; 
@@ -136,9 +137,17 @@
       margin-top: 6px; 
       -webkit-overflow-scrolling: touch; 
       scrollbar-width: none;
+      align-items: center;
     }
     .quick-chips::-webkit-scrollbar { display: none; }
     
+    .chip-item {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
     .quick-chips button { 
       padding: 6px 14px; 
       font-size: 13px; 
@@ -146,6 +155,27 @@
       flex-shrink: 0; 
       min-height: 38px; 
       border: 1px solid var(--border);
+    }
+
+    .chip-delete-btn {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--danger);
+      color: white;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      padding: 0;
+      min-height: 18px !important;
+      line-height: 1;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
 
     .controls { display: flex; gap: 8px; margin-top: 8px; }
@@ -270,16 +300,7 @@
           <button id="btn000" class="btn btn-ghost" type="button">000</button>
         </div>
 
-        <div class="quick-chips">
-          <button type="button" class="btn btn-ghost" onclick="addQuick(1000)">+1k</button>
-          <button type="button" class="btn btn-ghost" onclick="addQuick(2000)">+2k</button>
-          <button type="button" class="btn btn-ghost" onclick="addQuick(5000)">+5k</button>
-          <button type="button" class="btn btn-ghost" onclick="addQuick(10000)">+10k</button>
-          <button type="button" class="btn btn-ghost" onclick="addQuick(20000)">+20k</button>
-          <button type="button" class="btn btn-ghost" onclick="addQuick(50000)">+50k</button>
-          <button type="button" class="btn btn-ghost" onclick="addQuick(100000)">+100k</button>
-          <button type="button" class="btn btn-ghost" onclick="addQuick(500000)">+500k</button>
-        </div>
+        <div id="quickChipsContainer" class="quick-chips"></div>
 
         <div class="controls">
           <button id="btnAdd" class="btn btn-primary" type="button">INCOME</button>
@@ -350,6 +371,9 @@
   <script>
   (function(){
     const STORAGE_KEY="money-manager-v1";
+    const QUICK_CHIPS_KEY="cashbank-quick-chips";
+    const defaultChips = [1000, 2000, 5000, 10000, 20000, 50000, 100000, 500000];
+
     let state={
       balances:{bank:0,cash:0},
       history:[],
@@ -357,6 +381,7 @@
       showHistory:false,
       showMonthly:false,
       showSettings:false,
+      quickChips: JSON.parse(localStorage.getItem(QUICK_CHIPS_KEY)) || defaultChips,
       currency: localStorage.getItem("currency") || "VND",
       displayLimit: 30,
       selectedMonth:(()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`})()
@@ -369,6 +394,7 @@
     const toggleMonthlyBtn=document.getElementById("toggleMonthly"), monthlyWrapper=document.getElementById("monthlyWrapper"), monthPickerContainer=document.getElementById("monthPickerContainer"), monthPicker=document.getElementById("monthPicker"), monthDisplay=document.getElementById("monthDisplay");
     const totalExpenseEl=document.getElementById("totalExpense"), totalIncomeEl=document.getElementById("totalIncome");
     const btnClearHistory=document.getElementById("btnClearHistory");
+    const quickChipsContainer=document.getElementById("quickChipsContainer");
     
     const currencyBadge=document.getElementById("currencyBadge");
     const btnToggleSettings=document.getElementById("btnToggleSettings");
@@ -377,6 +403,80 @@
     const btnSaveCurrency=document.getElementById("btnSaveCurrency");
 
     const monthNames = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+
+    function formatChipLabel(val) {
+      if (val >= 1000000 && val % 100000 === 0) {
+        const m = val / 1000000;
+        return `+${m % 1 === 0 ? m : m.toFixed(1)}M`;
+      }
+      if (val >= 1000 && val % 100 === 0) {
+        const k = val / 1000;
+        return `+${k % 1 === 0 ? k : k.toFixed(1)}k`;
+      }
+      return `+${fmt(val)}`;
+    }
+
+    function renderQuickChips() {
+      quickChipsContainer.innerHTML = "";
+      state.quickChips.forEach((num, idx) => {
+        const item = document.createElement("div");
+        item.className = "chip-item";
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn btn-ghost";
+        btn.textContent = formatChipLabel(num);
+        btn.onclick = () => addQuick(num);
+
+        item.appendChild(btn);
+
+        if (state.showSettings) {
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "chip-delete-btn";
+          delBtn.textContent = "×";
+          delBtn.onclick = (e) => {
+            e.stopPropagation();
+            removeQuickChip(idx);
+          };
+          item.appendChild(delBtn);
+        }
+
+        quickChipsContainer.appendChild(item);
+      });
+
+      const addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.className = "btn btn-ghost";
+      addBtn.style.padding = "6px 12px";
+      addBtn.style.fontWeight = "bold";
+      addBtn.textContent = "＋";
+      addBtn.onclick = promptAddQuickChip;
+      quickChipsContainer.appendChild(addBtn);
+    }
+
+    function promptAddQuickChip() {
+      const input = prompt("Enter quick amount (e.g. 15000 or 200000):");
+      if (input) {
+        const val = Number(input.replace(/\D/g, ""));
+        if (val > 0) {
+          state.quickChips.push(val);
+          state.quickChips.sort((a, b) => a - b);
+          saveQuickChips();
+          renderQuickChips();
+        }
+      }
+    }
+
+    function removeQuickChip(index) {
+      state.quickChips.splice(index, 1);
+      saveQuickChips();
+      renderQuickChips();
+    }
+
+    function saveQuickChips() {
+      localStorage.setItem(QUICK_CHIPS_KEY, JSON.stringify(state.quickChips));
+    }
 
     function updateMonthDisplayLabel() {
       if(!state.selectedMonth) return;
@@ -414,6 +514,7 @@
     btnToggleSettings.addEventListener("click", () => {
       state.showSettings = !state.showSettings;
       settingsPanel.classList.toggle("hidden", !state.showSettings);
+      renderQuickChips();
     });
 
     function fmt(num){ return Number(num||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g," "); }
@@ -575,6 +676,7 @@
 
     function render(){
         renderBalances();
+        renderQuickChips();
         monthPicker.value=state.selectedMonth;
         historyWrapper.classList.toggle("hidden",!state.showHistory);
         toggleHistoryBtn.textContent=state.showHistory?"Hide":"Show";
