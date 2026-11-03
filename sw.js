@@ -1,4 +1,5 @@
-const CACHE_NAME = 'cashbank-v1';
+const CACHE_NAME = 'cashbank-v5';
+
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -6,10 +7,11 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (e) => {
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
@@ -26,15 +28,29 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') return;
+
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
+    caches.match(e.request, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
-      
-      return fetch(e.request).catch(() => {
-        return caches.match('./index.html');
+
+      if (e.request.mode === 'navigate') {
+        return caches.match('./index.html') || caches.match('./');
+      }
+
+      return fetch(e.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseToCache);
+          });
+        }
+        return networkResponse;
       });
+    }).catch(() => {
+      return caches.match('./index.html') || caches.match('./');
     })
   );
 });
