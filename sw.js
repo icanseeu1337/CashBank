@@ -1,9 +1,11 @@
-const CACHE_NAME = 'cashbank-v5';
+const CACHE_NAME = 'cashbank-v7';
 
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {
