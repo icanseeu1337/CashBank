@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cashbank-v7';
+const CACHE_NAME = 'cashbank-v1.4.7';
 
 const ASSETS_TO_CACHE = [
   './',
